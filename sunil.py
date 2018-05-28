@@ -46,7 +46,7 @@ class investigation:
         return self.cursor.fetchall()
 
     def solve(self, virat, sunil, suffix='views'):
-        meher = sunil.replace('\n', ' ')
+        sunil = sunil.replace('\n', ' ')
         result = self.execute_sunil(sunil)
         print virat
         for v in range(len(result)):
