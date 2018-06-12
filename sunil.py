@@ -1,66 +1,84 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
+# postgress liabrary files are imported 
 import psycopg2
 
-question_1 = 'The most popular three articles:-'
-invest_1 = """
-select title, count(*) as views from articles inner join
-log on concat('/article/', articles.slug) = log.path
-where log.status like '%200%'
-group by log.path, articles.title order by views desc limit 3;
-"""
-
-question_2 = 'The most popular article authors:-'
-invest_2 = """
-select authors.name, count(*) as views from articles inner join
-authors on articles.author = authors.id inner join
-log on concat('/article/', articles.slug) = log.path where
-log.status like '%200%' group by authors.name order by views desc
-"""
-
-question_3 = 'Days with more than 1% errors:-'
-invest_3 = """
-select * from (
-    select a.day,
-    round(cast((100*b.hits) as numeric) / cast(a.hits as numeric), 2)
-    as errp from
-        (select date(time) as day, count(*) as hits from log group by day) as a
-        inner join
-        (select date(time) as day, count(*) as hits from log where status
-        like '%404%' group by day) as b
-    on a.day = b.day)
-as t where errp > 1.0;
-"""
+# date module from datetime are imported 
+from datetime import date
 
 
-class investigation:
-    def __init__(self):
-        try:
-            self.db = psycopg2.connect('dbname=news')
-            self.cursor = self.db.cursor()
-        except Exception as o:
-            print (o)
+def output(quest):
+    try:
+        db = psycopg2.connect("dbname = news")
+        curs = db.cursor()
+        curs.execute(quest)
+        resu = curs.fetchall()
+        db.close()
+        return resu
+    except BaseException as errors:
+        print(errors)
 
-    def execute_invest(self, invest):
-        self.cursor.execute(invest)
-        return self.cursor.fetchall()
+articles1 =("SELECT title, COUnt(*) as views FROM articles "
+           "  JOIN log"
+           "    ON articles.slug = SUBSTRING(log.path, 10)"
+           "    GROUP BY title ORDER bY views DESC LIMIT 3;")
+authors2 = """select authors.name,
+           count(*) as views FROM articles
+           JOIN authors on articles.author = authors.id JOIN log
+           ON articles.slug = SUBSTRING(log.path, 10)
+           WHERE log.status LIKE '200 OK'
+           GROUP by authors.NAME ORDER BY views DESC;"""
+errors3 = """SELECT * from (SELECT date(time),
+		ROUND(100.0*sum(case log.status
+    		WHEN '200 OK'  
+                then 0 else 1 end)/
+		COUNT(log.status),3)
+	        as error FROM log GROUP
+    		by DATE(time) ORDER by error DESC) as 
+		SUBQ WHERE error > 1;"""
 
-    def solve(self, question, invest, suffix='views'):
-        invest = invest.replace('\n', ' ')
-        result = self.execute_invest(invest)
-        print question
-        for v in range(len(result)):
-            print '\t', v + 1, '.', result[v][0], '--', result[v][1], suffix
-        # blank line
-        print ''
 
-    def exit(self):
-        self.db.close()
+def fam_articles():
+    famo = output(articles1)
+    print('The most famous 3 articles of all time:')
+    
+    for sk in famo:
+        print('"' + sk[0] + '" -- ' + str(sk[1]) + " views")
+    print('')
+
+
+def fam_authors():
+    famos = output(authors2)
+    print('The most famous 3 authors of all time:')
+    
+    for t in famos:
+        print('"' + t[0] + '" -- ' + str(t[1]) + ' views')
+    
+    print('')
+
+def error_day():
+    print('Error days with more than 1% errors:')
+
+    
+    res = output("""
+    SELECT * from (select DATE(time),
+    round(100.0*sum(case log.status
+    WHEN '200 OK'  then 0 else 1 end) / 
+    COUNT(log.status),3)
+    as error FROM log GROUP
+    by DATE(time) order by error desc) as subq where error > 1;
+                   """)
+    # To print the output
+    for result in res:
+                print (" %s: %s views" % (result[0], result[1]))
+
+
+   
 
 
 if __name__ == '__main__':
-    investigation = investigation()
-    investigation.solve(question_1, invest_1)
-    investigation.solve(question_2,invest_2)
-    investigation.solve(question_3, invest_3, '% error')
-investigation.exit()
+    print("RESULTS:")
+    
+    fam_articles()
+    fam_authors()
+    error_day()
