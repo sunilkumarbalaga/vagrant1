@@ -66,7 +66,7 @@ def error_day():
     WHEN '200 OK'  then 0 else 1 end) / 
     COUNT(log.status),3)
     as error FROM log GROUP
-    by DATE(time) order by error desc) as subq where error > 1;
+    by DATE(time) ORDER by error desc) as subq where error > 1;
                    """)
     # To print the output
     for result in res:
