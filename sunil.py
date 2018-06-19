@@ -73,4 +73,3 @@ if __name__ == '__main__':
     fam_articles()
     fam_authors()
     error_day()
-
